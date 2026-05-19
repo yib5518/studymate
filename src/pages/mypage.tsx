@@ -1,40 +1,115 @@
-import React from 'react';
-import { Settings, GraduationCap, MapPin, CalendarDays, Plus, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, GraduationCap, MapPin, CalendarDays, Plus, X, Calendar, Users, User } from 'lucide-react';
 import Header from '../components/Header';
+import { createStudyApi, getStudiesApi, getStudyDetailApi } from '../api/auth'; // getStudyDetailApi 임포트 추가
 
 const MyPage = () => {
+  // 사용자 정보 상태
+  const [userInfo, setUserInfo] = useState<any>({
+    name: "Alex Chen",
+    major: "컴퓨터 공학 및 인지 심리학",
+    description: "학습법을 이해하고 더 접근하기 쉬운 교육 도구를 만드는 것에 열정이 있습니다.",
+    profileImageUrl: "https://placehold.co/128x128"
+  });
+
+  // 탭 상태 관리 ('my': 내 스터디, 'applied': 신청한 스터디)
+  const [activeTab, setActiveTab] = useState<'my' | 'applied'>('my');
+
+  // 데이터 상태 관리
+  const [myStudies, setMyStudies] = useState<any[]>([]);       
+  const [appliedStudies, setAppliedStudies] = useState<any[]>([]); 
+
+  // 스터디 생성 모달 및 입력 폼 상태
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [studyName, setStudyName] = useState('');
+  const [studyCategory, setStudyCategory] = useState('개발');
+
+  // 스터디 상세 조회 모달 관련 상태 추가
+  const [selectedStudy, setSelectedStudy] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // 스터디 데이터 불러오기 함수
+  const fetchMyPageData = async () => {
+    try {
+      const data = await getStudiesApi({ page: 0, size: 20 });
+      console.log('마이페이지 스터디 목록 조회 성공:', data);
+      setMyStudies(data.items || []); 
+      setAppliedStudies(data.items || []);
+    } catch (error) {
+      console.error('마이페이지 데이터 조회 실패:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyPageData();
+  }, []);
+
+  // 스터디 상세 조회 클릭 핸들러 추가
+  const handleStudyClick = async (id: number) => {
+    try {
+      const data = await getStudyDetailApi(id);
+      console.log('마이페이지 스터디 상세 조회 성공:', data);
+      setSelectedStudy(data);
+      setIsDetailOpen(true);
+    } catch (error) {
+      console.error('스터디 상세 조회 실패:', error);
+      alert('스터디 정보를 불러오는 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 스터디 생성 핸들러
+  const handleCreateStudy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studyName.trim()) {
+      alert('스터디 이름을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const newStudy = await createStudyApi(studyName, studyCategory);
+      setMyStudies((prev) => [newStudy, ...prev]);
+      alert('스터디가 성공적으로 생성되었습니다!');
+      setStudyName('');
+      setStudyCategory('개발');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('스터디 생성 실패:', error);
+      alert('스터디 생성 중 오류가 발생했습니다.');
+    }
+  };
+
+  const currentStudies = activeTab === 'my' ? myStudies : appliedStudies;
+
   return (
     <div className="w-full min-h-screen bg-stone-50 flex flex-col items-center font-['Pretendard']">
-      
-      {/* 공통 헤더 적용 */}
       <Header />
 
       <main className="w-full max-w-[1280px] px-16 py-12 flex flex-col gap-12 flex-1">
         
         {/* 프로필 섹션 */}
         <section className="relative w-full bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.02)] border border-slate-300/30 p-12 flex items-start gap-12 overflow-hidden">
-          {/* 배경 장식 (우측 상단 Blur 효과) */}
           <div className="absolute -top-32 right-0 w-64 h-64 bg-blue-100/50 rounded-full blur-[40px] pointer-events-none" />
           
-          {/* 아바타 */}
           <img 
-            className="w-32 h-32 relative z-10 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] border-4 border-white object-cover" 
-            src="https://placehold.co/128x128" 
+            className="w-32 h-32 relative z-10 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] border-4 border-white object-cover bg-gray-100" 
+            src={userInfo?.profileImageUrl || "https://placehold.co/128x128"} 
             alt="Profile" 
           />
           
-          {/* 프로필 정보 */}
           <div className="flex-1 flex flex-col gap-4 relative z-10">
-            <div>
-              <h1 className="text-zinc-900 text-4xl font-bold leading-[48px]">Alex Chen</h1>
-              <p className="text-zinc-600 text-lg font-medium leading-7 mt-1">컴퓨터 공학 및 인지 심리학</p>
-            </div>
-            
-            <p className="text-gray-700 text-base font-normal leading-6 max-w-[672px]">
-              Passionate about understanding how we learn and building tools to make education
-              more accessible. Currently focusing on deep work techniques and distributed systems.
-              Always looking for study partners in the tech space.
-            </p>
+            {userInfo ? (
+              <>
+                <div>
+                  <h1 className="text-zinc-900 text-4xl font-bold leading-[48px]">{userInfo.name}</h1>
+                  <p className="text-zinc-600 text-lg font-medium leading-7 mt-1">{userInfo.major}</p>
+                </div>
+                <p className="text-gray-700 text-base font-normal leading-6 max-w-[672px]">
+                  {userInfo.description}
+                </p>
+              </>
+            ) : (
+              <div className="text-gray-400 py-4">사용자 정보를 불러오는 중입니다...</div>
+            )}
             
             <div className="flex flex-wrap items-center gap-3 mt-2">
               <div className="px-3 py-1.5 bg-zinc-100 rounded-xl border border-slate-300/50 flex items-center gap-2">
@@ -51,8 +126,6 @@ const MyPage = () => {
               </div>
             </div>
           </div>
-
-          {/* 설정 버튼 */}
           <button className="absolute top-6 right-6 p-2 rounded-xl hover:bg-stone-100 transition-colors z-10 text-zinc-600">
             <Settings className="w-5 h-5" />
           </button>
@@ -60,128 +133,199 @@ const MyPage = () => {
 
         {/* 탭 네비게이션 */}
         <div className="w-full border-b border-slate-300 flex gap-6">
-          <button className="px-3 pb-3 border-b-2 border-sky-800 text-sky-800 text-sm font-medium tracking-tight">
+          <button 
+            onClick={() => setActiveTab('my')}
+            className={`px-3 pb-3 border-b-2 text-sm font-medium tracking-tight transition-colors ${
+              activeTab === 'my' ? 'border-sky-800 text-sky-800' : 'border-transparent text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
             내 스터디
           </button>
-          <button className="px-3 pb-3 border-b-2 border-transparent text-zinc-600 text-sm font-medium tracking-tight hover:text-zinc-900">
+          <button 
+            onClick={() => setActiveTab('applied')}
+            className={`px-3 pb-3 border-b-2 text-sm font-medium tracking-tight transition-colors ${
+              activeTab === 'applied' ? 'border-sky-800 text-sky-800' : 'border-transparent text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
             신청한 스터디
           </button>
-          <button className="px-3 pb-3 border-b-2 border-transparent text-zinc-600 text-sm font-medium tracking-tight hover:text-zinc-900">
-            설정
-          </button>
         </div>
 
-        {/* 콘텐츠 그리드/리스트 */}
+        {/* 콘텐츠 리스트 출력 영역 */}
         <div className="w-full flex flex-col gap-6">
-          
-          {/* 예정된 스터디 카드 */}
-          <div className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-start">
-                <div className="px-3 py-1.5 bg-blue-100 rounded-sm flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 bg-sky-950 rounded-full" />
-                  <span className="text-sky-950 text-xs font-medium">다음 모임: 오늘 오후 4시</span>
+          {currentStudies.length === 0 ? (
+            <div className="py-14 flex justify-center items-center text-zinc-500 bg-white rounded-lg border border-neutral-200">
+              {activeTab === 'my' ? '개설한 스터디가 없습니다.' : '참여 중인 스터디가 없습니다.'}
+            </div>
+          ) : (
+            currentStudies.map((study, idx) => (
+              <div 
+                key={study.id || idx} 
+                onClick={() => study.id && handleStudyClick(study.id)} // 클릭 이벤트 바인딩
+                className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-4 hover:border-sky-700 transition-colors cursor-pointer"
+              >
+                <div className="flex justify-between items-center">
+                  <div className="px-2 py-1 bg-indigo-300/20 rounded-sm flex items-center gap-1">
+                    <span className="text-sky-700 text-xs font-medium">{study.category}</span>
+                  </div>
+                  <span className="text-zinc-500 text-xs">
+                    {study.memberCount !== undefined ? `멤버 수: ${study.memberCount}명` : '멤버 정보 없음'}
+                  </span>
                 </div>
-                <button className="text-gray-400 hover:text-gray-600">
-                  <Settings className="w-4 h-4" />
-                </button>
+                <h2 className="text-zinc-900 text-2xl font-medium leading-8">{study.name}</h2>
+                {study.createdAt && (
+                  <span className="text-zinc-400 text-xs">개설일: {new Date(study.createdAt).toLocaleDateString()}</span>
+                )}
               </div>
-              <h2 className="text-zinc-900 text-2xl font-medium leading-8">고급 알고리즘 및 자료구조</h2>
-              <p className="text-zinc-600 text-base font-medium leading-6 max-w-[700px]">
-                매주 복잡한 알고리즘 문제에 대해 깊이 있게 탐구합니다. 현재는 경쟁 프로그래밍을 위한 그래프 이론과 동적 계획법 패턴에 집중하고 있습니다.
-              </p>
-            </div>
-            
-            <div className="flex justify-between items-center mt-2">
-              <div className="flex items-center -space-x-2">
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="https://placehold.co/32x32" alt="Member" />
-                <img className="w-8 h-8 rounded-full border-2 border-white" src="https://placehold.co/32x32" alt="Member" />
-                <div className="w-8 h-8 bg-zinc-100 rounded-full border-2 border-white flex justify-center items-center">
-                  <span className="text-zinc-600 text-xs font-medium">+3</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 bg-zinc-600 rounded-full" />
-                <span className="text-zinc-600 text-xs font-medium">다음 모임: 오늘 오후 4시</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 주간 목표 달성도 카드 */}
-          <div className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-4">
-            <h3 className="text-zinc-600 text-sm font-medium tracking-tight">주간 목표 달성도</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-zinc-900 text-3xl font-semibold">12</span>
-              <span className="text-zinc-600 text-base font-normal">/ 15시간</span>
-            </div>
-            {/* 프로그레스 바 */}
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="w-4/5 h-full bg-sky-700 rounded-full" /> {/* 12/15 = 80% */}
-            </div>
-            <p className="text-zinc-600 text-xs font-medium leading-5">
-              이번 주 학습 목표 달성을 향해 잘 나아가고 있습니다. 계속<br/>힘내세요!
-            </p>
-          </div>
-
-          {/* 완료된 스터디 1 */}
-          <div className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <div className="px-2 py-1 bg-zinc-100 rounded-sm flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-gray-700" />
-                <span className="text-gray-700 text-xs font-medium">완료</span>
-              </div>
-              <button className="text-gray-400 hover:text-gray-600">
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-            <h3 className="text-zinc-900 text-2xl font-medium leading-8">인지 심리학 입문</h3>
-            <p className="text-zinc-600 text-sm font-medium leading-5">
-              기억 모델과 주의 집중력 연구에 대한 기초적인 검토입니다.
-            </p>
-          </div>
-
-          {/* 완료된 스터디 2 */}
-          <div className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <div className="px-2 py-1 bg-zinc-100 rounded-sm flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-gray-700" />
-                <span className="text-gray-700 text-xs font-medium">완료</span>
-              </div>
-              <button className="text-gray-400 hover:text-gray-600">
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-            <h3 className="text-zinc-900 text-2xl font-medium leading-8">선형 대수학 기초</h3>
-            <p className="text-zinc-600 text-sm font-medium leading-5">
-              행렬 연산, 벡터 및 컴퓨터 그래픽 분야에서의 응용.
-            </p>
-          </div>
+            ))
+          )}
 
           {/* 새 스터디 만들기 버튼 카드 */}
-          <button className="w-full h-48 bg-stone-50 hover:bg-stone-100 transition-colors rounded-lg border-2 border-dashed border-gray-300 flex flex-col justify-center items-center gap-4">
-            <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex justify-center items-center">
-              <Plus className="w-6 h-6 text-sky-800" />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-zinc-900 text-sm font-medium tracking-tight">새 스터디 만들기</span>
-              <span className="text-zinc-500 text-xs font-medium">새로운 그룹을 만들거나 개인 학습 기록을 시작하세요</span>
-            </div>
-          </button>
-
+          {activeTab === 'my' && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="w-full h-48 bg-stone-50 hover:bg-stone-100 transition-colors rounded-lg border-2 border-dashed border-gray-300 flex flex-col justify-center items-center gap-4"
+            >
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex justify-center items-center">
+                <Plus className="w-6 h-6 text-sky-800" />
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-zinc-900 text-sm font-medium tracking-tight">새 스터디 만들기</span>
+                <span className="text-zinc-500 text-xs font-medium">새로운 그룹을 만들거나 개인 학습 기록을 시작하세요</span>
+              </div>
+            </button>
+          )}
         </div>
       </main>
+
+      {/* 스터디 생성 팝업 모달 */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-xl border border-stone-100 flex flex-col gap-5 relative">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div>
+              <h3 className="text-zinc-900 text-xl font-bold tracking-tight">새 스터디 그룹 만들기</h3>
+              <p className="text-zinc-500 text-xs mt-1">목표 달성을 위한 스터디 정보를 입력하세요.</p>
+            </div>
+
+            <form onSubmit={handleCreateStudy} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-zinc-900 text-sm font-medium">스터디 이름</label>
+                <input 
+                  type="text"
+                  value={studyName}
+                  onChange={(e) => setStudyName(e.target.value)}
+                  placeholder="예: 알고리즘 코테 대비 모임"
+                  required
+                  className="w-full px-3 py-2.5 bg-stone-50 rounded-md border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-700 text-base"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-zinc-900 text-sm font-medium">카테고리</label>
+                <select 
+                  value={studyCategory}
+                  onChange={(e) => setStudyCategory(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-stone-50 rounded-md border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-700 text-base"
+                >
+                  <option value="개발">개발</option>
+                  <option value="디자인">디자인</option>
+                  <option value="언어">언어</option>
+                  <option value="비즈니스">비즈니스</option>
+                  <option value="자격증">자격증</option>
+                </select>
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full mt-2 py-3 bg-sky-700 hover:bg-sky-800 text-white rounded-md text-sm font-medium transition-colors shadow-sm"
+              >
+                생성하기
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 스터디 상세 정보 조회 모달 UI 추가 */}
+      {isDetailOpen && selectedStudy && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-lg p-6 shadow-xl border border-stone-100 flex flex-col gap-5 relative animate-in fade-in zoom-in-95 duration-150">
+            <button 
+              onClick={() => {
+                setIsDetailOpen(false);
+                setSelectedStudy(null);
+              }}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <div className="px-2 py-1 bg-indigo-300/20 rounded-sm inline-block mb-2">
+                <span className="text-sky-700 text-xs font-medium">{selectedStudy.category}</span>
+              </div>
+              <h3 className="text-zinc-900 text-2xl font-bold tracking-tight">{selectedStudy.name}</h3>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-b border-stone-100 py-4 text-sm text-zinc-700">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-zinc-500" />
+                <span className="font-medium w-24">개설자(Host ID):</span>
+                <span>{selectedStudy.hostId}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-zinc-500" />
+                <span className="font-medium w-24">현재 인원 수:</span>
+                <span>{selectedStudy.memberCount} 명</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-zinc-500" />
+                <span className="font-medium w-24">생성 시각:</span>
+                <span>{new Date(selectedStudy.createdAt).toLocaleString()}</span>
+              </div>
+              <div className="flex flex-col gap-1 pt-1">
+                <span className="font-medium text-zinc-900">참여 멤버 ID 명단:</span>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {selectedStudy.memberIds && selectedStudy.memberIds.length > 0 ? (
+                    selectedStudy.memberIds.map((memberId: string, idx: number) => (
+                      <span key={idx} className="px-2 py-0.5 bg-stone-100 rounded text-xs text-zinc-600">
+                        {memberId}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-zinc-400 text-xs">참여 멤버가 없습니다.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setSelectedStudy(null);
+                }}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-zinc-700 text-sm font-medium rounded-md transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 푸터 */}
       <footer className="w-full bg-zinc-100 border-t border-slate-300 flex justify-center mt-auto">
         <div className="w-full max-w-[1280px] p-6 flex justify-between items-center">
           <span className="text-zinc-600 text-lg font-normal">StudyMate</span>
-          <span className="text-zinc-900 text-xs font-normal">© 2026 StudyMate. 전 세계 학습자를 위한 인지적 명확성을 육성합니다.</span>
-          <div className="flex gap-4">
-            <span className="text-zinc-600 text-xs font-medium cursor-pointer hover:underline">개인정보 처리방침</span>
-            <span className="text-zinc-600 text-xs font-medium cursor-pointer hover:underline">이용약관</span>
-            <span className="text-zinc-600 text-xs font-medium cursor-pointer hover:underline">고객 센터</span>
-            <span className="text-zinc-600 text-xs font-medium cursor-pointer hover:underline">문의하기</span>
-          </div>
+          <span className="text-zinc-900 text-xs font-normal">&copy; 2026 StudyMate. 전 세계 학습자를 위한 인지적 명확성을 육성합니다.</span>
         </div>
       </footer>
     </div>
