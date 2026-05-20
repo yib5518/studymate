@@ -1,40 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, GraduationCap, MapPin, CalendarDays, Plus, X, Calendar, Users, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // 페이지 이동을 위한 훅 임포트
+import { Settings, GraduationCap, MapPin, CalendarDays, Plus, X, Calendar, Users, User, Heart, Bookmark, LogOut, UserMinus } from 'lucide-react';
 import Header from '../components/Header';
-import { createStudyApi, getStudiesApi, getStudyDetailApi } from '../api/auth'; // getStudyDetailApi 임포트 추가
+import { 
+  createStudyApi, getStudiesApi, getStudyDetailApi, getMyProfileApi,
+  logoutApi, withdrawApi // 로그아웃, 회원탈퇴 API 임포트
+} from '../api/auth';
 
 const MyPage = () => {
-  // 사용자 정보 상태
-  const [userInfo, setUserInfo] = useState<any>({
-    name: "Alex Chen",
-    major: "컴퓨터 공학 및 인지 심리학",
-    description: "학습법을 이해하고 더 접근하기 쉬운 교육 도구를 만드는 것에 열정이 있습니다.",
-    profileImageUrl: "https://placehold.co/128x128"
-  });
+  const navigate = useNavigate();
 
-  // 탭 상태 관리 ('my': 내 스터디, 'applied': 신청한 스터디)
-  const [activeTab, setActiveTab] = useState<'my' | 'applied'>('my');
+  const [userInfo, setUserInfo] = useState<any>(null);
 
-  // 데이터 상태 관리
+  // 탭 상태 관리에 'settings' 추가
+  const [activeTab, setActiveTab] = useState<'my' | 'bookmarked' | 'settings'>('my');
+
   const [myStudies, setMyStudies] = useState<any[]>([]);       
-  const [appliedStudies, setAppliedStudies] = useState<any[]>([]); 
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<any[]>([]); 
 
-  // 스터디 생성 모달 및 입력 폼 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [studyName, setStudyName] = useState('');
   const [studyCategory, setStudyCategory] = useState('개발');
 
-  // 스터디 상세 조회 모달 관련 상태 추가
   const [selectedStudy, setSelectedStudy] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  // 스터디 데이터 불러오기 함수
   const fetchMyPageData = async () => {
     try {
-      const data = await getStudiesApi({ page: 0, size: 20 });
-      console.log('마이페이지 스터디 목록 조회 성공:', data);
-      setMyStudies(data.items || []); 
-      setAppliedStudies(data.items || []);
+      const studyData = await getStudiesApi({ page: 0, size: 20 });
+      setMyStudies(studyData.items || []);
+
+      const meData = await getMyProfileApi();
+      setUserInfo({
+        id: meData.id,
+        name: meData.id, 
+        major: "컴퓨터 공학 및 인지 심리학", 
+        description: "학습법을 이해하고 더 접근하기 쉬운 교육 도구를 만드는 것에 열정이 있습니다.",
+        profileImageUrl: "https://placehold.co/128x128"
+      });
+      
+      setBookmarkedPosts(meData.bookmarkedPosts || []);
     } catch (error) {
       console.error('마이페이지 데이터 조회 실패:', error);
     }
@@ -44,20 +49,16 @@ const MyPage = () => {
     fetchMyPageData();
   }, []);
 
-  // 스터디 상세 조회 클릭 핸들러 추가
   const handleStudyClick = async (id: number) => {
     try {
       const data = await getStudyDetailApi(id);
-      console.log('마이페이지 스터디 상세 조회 성공:', data);
       setSelectedStudy(data);
       setIsDetailOpen(true);
     } catch (error) {
       console.error('스터디 상세 조회 실패:', error);
-      alert('스터디 정보를 불러오는 중 오류가 발생했습니다.');
     }
   };
 
-  // 스터디 생성 핸들러
   const handleCreateStudy = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studyName.trim()) {
@@ -74,11 +75,37 @@ const MyPage = () => {
       setIsModalOpen(false);
     } catch (error) {
       console.error('스터디 생성 실패:', error);
-      alert('스터디 생성 중 오류가 발생했습니다.');
     }
   };
 
-  const currentStudies = activeTab === 'my' ? myStudies : appliedStudies;
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    if (!window.confirm('로그아웃 하시겠습니까?')) return;
+    
+    try {
+      await logoutApi();
+      // 성공 시 로컬 스토리지/토큰 등 세션 정리 로직이 필요하다면 여기에 추가
+      navigate('/');
+    } catch (error) {
+      console.error('로그아웃 실패:', error);
+      alert('로그아웃 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 회원탈퇴 핸들러
+  const handleWithdraw = async () => {
+    if (!window.confirm('정말로 회원탈퇴를 진행하시겠습니까? 모든 정보가 삭제되며 복구할 수 없습니다.')) return;
+    
+    try {
+      await withdrawApi();
+      alert('회원탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.');
+      // 세션 정리 로직이 필요하다면 여기에 추가
+      navigate('/');
+    } catch (error) {
+      console.error('회원탈퇴 실패:', error);
+      alert('회원탈퇴 처리 중 오류가 발생했습니다.');
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-stone-50 flex flex-col items-center font-['Pretendard']">
@@ -126,7 +153,10 @@ const MyPage = () => {
               </div>
             </div>
           </div>
-          <button className="absolute top-6 right-6 p-2 rounded-xl hover:bg-stone-100 transition-colors z-10 text-zinc-600">
+          <button 
+            onClick={() => setActiveTab('settings')} // 아이콘 클릭 시 설정 탭으로 이동 기능 추가
+            className="absolute top-6 right-6 p-2 rounded-xl hover:bg-stone-100 transition-colors z-10 text-zinc-600"
+          >
             <Settings className="w-5 h-5" />
           </button>
         </section>
@@ -142,58 +172,143 @@ const MyPage = () => {
             내 스터디
           </button>
           <button 
-            onClick={() => setActiveTab('applied')}
+            onClick={() => setActiveTab('bookmarked')}
             className={`px-3 pb-3 border-b-2 text-sm font-medium tracking-tight transition-colors ${
-              activeTab === 'applied' ? 'border-sky-800 text-sky-800' : 'border-transparent text-zinc-600 hover:text-zinc-900'
+              activeTab === 'bookmarked' ? 'border-sky-800 text-sky-800' : 'border-transparent text-zinc-600 hover:text-zinc-900'
             }`}
           >
-            신청한 스터디
+            즐겨찾기한 게시글
+          </button>
+          {/* 설정 탭 추가 */}
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`px-3 pb-3 border-b-2 text-sm font-medium tracking-tight transition-colors ${
+              activeTab === 'settings' ? 'border-sky-800 text-sky-800' : 'border-transparent text-zinc-600 hover:text-zinc-900'
+            }`}
+          >
+            설정
           </button>
         </div>
 
         {/* 콘텐츠 리스트 출력 영역 */}
         <div className="w-full flex flex-col gap-6">
-          {currentStudies.length === 0 ? (
-            <div className="py-14 flex justify-center items-center text-zinc-500 bg-white rounded-lg border border-neutral-200">
-              {activeTab === 'my' ? '개설한 스터디가 없습니다.' : '참여 중인 스터디가 없습니다.'}
-            </div>
-          ) : (
-            currentStudies.map((study, idx) => (
-              <div 
-                key={study.id || idx} 
-                onClick={() => study.id && handleStudyClick(study.id)} // 클릭 이벤트 바인딩
-                className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-4 hover:border-sky-700 transition-colors cursor-pointer"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="px-2 py-1 bg-indigo-300/20 rounded-sm flex items-center gap-1">
-                    <span className="text-sky-700 text-xs font-medium">{study.category}</span>
-                  </div>
-                  <span className="text-zinc-500 text-xs">
-                    {study.memberCount !== undefined ? `멤버 수: ${study.memberCount}명` : '멤버 정보 없음'}
-                  </span>
+          {activeTab === 'my' && (
+            <>
+              {myStudies.length === 0 ? (
+                <div className="py-14 flex justify-center items-center text-zinc-500 bg-white rounded-lg border border-neutral-200">
+                  개설한 스터디가 없습니다.
                 </div>
-                <h2 className="text-zinc-900 text-2xl font-medium leading-8">{study.name}</h2>
-                {study.createdAt && (
-                  <span className="text-zinc-400 text-xs">개설일: {new Date(study.createdAt).toLocaleDateString()}</span>
-                )}
-              </div>
-            ))
+              ) : (
+                myStudies.map((study, idx) => (
+                  <div 
+                    key={study.id || idx} 
+                    onClick={() => study.id && handleStudyClick(study.id)} 
+                    className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-4 hover:border-sky-700 transition-colors cursor-pointer"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="px-2 py-1 bg-indigo-300/20 rounded-sm flex items-center gap-1">
+                        <span className="text-sky-700 text-xs font-medium">{study.category}</span>
+                      </div>
+                      <span className="text-zinc-500 text-xs">
+                        {study.memberCount !== undefined ? `멤버 수: ${study.memberCount}명` : '멤버 정보 없음'}
+                      </span>
+                    </div>
+                    <h2 className="text-zinc-900 text-2xl font-medium leading-8">{study.name}</h2>
+                    {study.createdAt && (
+                      <span className="text-zinc-400 text-xs">개설일: {new Date(study.createdAt).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                ))
+              )}
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="w-full h-48 bg-stone-50 hover:bg-stone-100 transition-colors rounded-lg border-2 border-dashed border-gray-300 flex flex-col justify-center items-center gap-4"
+              >
+                <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex justify-center items-center">
+                  <Plus className="w-6 h-6 text-sky-800" />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-zinc-900 text-sm font-medium tracking-tight">새 스터디 만들기</span>
+                  <span className="text-zinc-500 text-xs font-medium">새로운 그룹을 만들거나 개인 학습 기록을 시작하세요</span>
+                </div>
+              </button>
+            </>
           )}
 
-          {/* 새 스터디 만들기 버튼 카드 */}
-          {activeTab === 'my' && (
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="w-full h-48 bg-stone-50 hover:bg-stone-100 transition-colors rounded-lg border-2 border-dashed border-gray-300 flex flex-col justify-center items-center gap-4"
-            >
-              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex justify-center items-center">
-                <Plus className="w-6 h-6 text-sky-800" />
+          {activeTab === 'bookmarked' && (
+            <>
+              {bookmarkedPosts.length === 0 ? (
+                <div className="py-14 flex justify-center items-center text-zinc-500 bg-white rounded-lg border border-neutral-200">
+                  즐겨찾기한 게시글이 없습니다.
+                </div>
+              ) : (
+                bookmarkedPosts.map((post, idx) => (
+                  <div 
+                    key={post.id || idx} 
+                    className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-3"
+                  >
+                    <div className="flex justify-between items-center text-xs text-zinc-500">
+                      <span className="font-medium">작성자: {post.authorId}</span>
+                      <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <h2 className="text-zinc-900 text-xl font-semibold tracking-tight leading-7">{post.title}</h2>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-zinc-600">
+                      <div className="flex items-center gap-1">
+                        <Heart className={`w-3.5 h-3.5 ${post.liked ? 'fill-red-500 text-red-500' : 'text-zinc-400'}`} />
+                        <span>좋아요 {post.likeCount}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-sky-700">
+                        <Bookmark className="w-3.5 h-3.5 fill-sky-700 text-sky-700" />
+                        <span className="font-medium">북마크 보관됨</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </>
+          )}
+
+          {/* 설정 탭 콘텐츠 */}
+          {activeTab === 'settings' && (
+            <div className="flex flex-col gap-4 max-w-lg">
+              <h2 className="text-zinc-900 text-xl font-semibold mb-2">계정 관리</h2>
+              
+              <div className="p-6 bg-white rounded-lg shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-slate-300/30 flex flex-col gap-6">
+                
+                {/* 로그아웃 영역 */}
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-zinc-900 font-medium">로그아웃</span>
+                    <span className="text-zinc-500 text-sm">현재 기기에서 계정을 로그아웃합니다.</span>
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="px-4 py-2 border border-slate-300 hover:bg-stone-50 rounded-md text-zinc-700 text-sm font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    로그아웃
+                  </button>
+                </div>
+
+                <div className="w-full h-px bg-slate-200" />
+
+                {/* 회원탈퇴 영역 */}
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-zinc-900 font-medium">회원탈퇴</span>
+                    <span className="text-zinc-500 text-sm">모든 계정 정보와 활동 기록이 영구적으로 삭제됩니다.</span>
+                  </div>
+                  <button 
+                    onClick={handleWithdraw}
+                    className="px-4 py-2 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md text-red-600 text-sm font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <UserMinus className="w-4 h-4" />
+                    회원탈퇴
+                  </button>
+                </div>
+
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-zinc-900 text-sm font-medium tracking-tight">새 스터디 만들기</span>
-                <span className="text-zinc-500 text-xs font-medium">새로운 그룹을 만들거나 개인 학습 기록을 시작하세요</span>
-              </div>
-            </button>
+            </div>
           )}
         </div>
       </main>
@@ -202,38 +317,20 @@ const MyPage = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-xl border border-stone-100 flex flex-col gap-5 relative">
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 p-1 rounded-lg"
-            >
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 p-1 rounded-lg">
               <X className="w-5 h-5" />
             </button>
-            
             <div>
               <h3 className="text-zinc-900 text-xl font-bold tracking-tight">새 스터디 그룹 만들기</h3>
-              <p className="text-zinc-500 text-xs mt-1">목표 달성을 위한 스터디 정보를 입력하세요.</p>
             </div>
-
             <form onSubmit={handleCreateStudy} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-zinc-900 text-sm font-medium">스터디 이름</label>
-                <input 
-                  type="text"
-                  value={studyName}
-                  onChange={(e) => setStudyName(e.target.value)}
-                  placeholder="예: 알고리즘 코테 대비 모임"
-                  required
-                  className="w-full px-3 py-2.5 bg-stone-50 rounded-md border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-700 text-base"
-                />
+                <input type="text" value={studyName} onChange={(e) => setStudyName(e.target.value)} placeholder="예: 알고리즘 코테 대비 모임" required className="w-full px-3 py-2.5 bg-stone-50 rounded-md border border-slate-300 text-base focus:outline-none"/>
               </div>
-
               <div className="flex flex-col gap-1">
                 <label className="text-zinc-900 text-sm font-medium">카테고리</label>
-                <select 
-                  value={studyCategory}
-                  onChange={(e) => setStudyCategory(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-stone-50 rounded-md border border-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-700 text-base"
-                >
+                <select value={studyCategory} onChange={(e) => setStudyCategory(e.target.value)} className="w-full px-3 py-2.5 bg-stone-50 rounded-md border border-slate-300 text-base focus:outline-none">
                   <option value="개발">개발</option>
                   <option value="디자인">디자인</option>
                   <option value="언어">언어</option>
@@ -241,63 +338,35 @@ const MyPage = () => {
                   <option value="자격증">자격증</option>
                 </select>
               </div>
-
-              <button 
-                type="submit"
-                className="w-full mt-2 py-3 bg-sky-700 hover:bg-sky-800 text-white rounded-md text-sm font-medium transition-colors shadow-sm"
-              >
-                생성하기
-              </button>
+              <button type="submit" className="w-full mt-2 py-3 bg-sky-700 hover:bg-sky-800 text-white rounded-md text-sm font-medium transition-colors shadow-sm">생성하기</button>
             </form>
           </div>
         </div>
       )}
 
-      {/* 스터디 상세 정보 조회 모달 UI 추가 */}
+      {/* 스터디 상세 정보 조회 모달 UI */}
       {isDetailOpen && selectedStudy && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-lg p-6 shadow-xl border border-stone-100 flex flex-col gap-5 relative animate-in fade-in zoom-in-95 duration-150">
-            <button 
-              onClick={() => {
-                setIsDetailOpen(false);
-                setSelectedStudy(null);
-              }}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 p-1 rounded-lg"
-            >
+          <div className="bg-white rounded-lg w-full max-w-lg p-6 shadow-xl border border-stone-100 flex flex-col gap-5 relative">
+            <button onClick={() => { setIsDetailOpen(false); setSelectedStudy(null); }} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 p-1 rounded-lg">
               <X className="w-5 h-5" />
             </button>
-
             <div>
               <div className="px-2 py-1 bg-indigo-300/20 rounded-sm inline-block mb-2">
                 <span className="text-sky-700 text-xs font-medium">{selectedStudy.category}</span>
               </div>
               <h3 className="text-zinc-900 text-2xl font-bold tracking-tight">{selectedStudy.name}</h3>
             </div>
-
             <div className="flex flex-col gap-3 border-t border-b border-stone-100 py-4 text-sm text-zinc-700">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-zinc-500" />
-                <span className="font-medium w-24">개설자(Host ID):</span>
-                <span>{selectedStudy.hostId}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-zinc-500" />
-                <span className="font-medium w-24">현재 인원 수:</span>
-                <span>{selectedStudy.memberCount} 명</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-zinc-500" />
-                <span className="font-medium w-24">생성 시각:</span>
-                <span>{new Date(selectedStudy.createdAt).toLocaleString()}</span>
-              </div>
+              <div className="flex items-center gap-2"><User className="w-4 h-4 text-zinc-500" /><span className="font-medium w-24">개설자(Host ID):</span><span>{selectedStudy.hostId}</span></div>
+              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-zinc-500" /><span className="font-medium w-24">현재 인원 수:</span><span>{selectedStudy.memberCount} 명</span></div>
+              <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-zinc-500" /><span className="font-medium w-24">생성 시각:</span><span>{new Date(selectedStudy.createdAt).toLocaleString()}</span></div>
               <div className="flex flex-col gap-1 pt-1">
                 <span className="font-medium text-zinc-900">참여 멤버 ID 명단:</span>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {selectedStudy.memberIds && selectedStudy.memberIds.length > 0 ? (
                     selectedStudy.memberIds.map((memberId: string, idx: number) => (
-                      <span key={idx} className="px-2 py-0.5 bg-stone-100 rounded text-xs text-zinc-600">
-                        {memberId}
-                      </span>
+                      <span key={idx} className="px-2 py-0.5 bg-stone-100 rounded text-xs text-zinc-600">{memberId}</span>
                     ))
                   ) : (
                     <span className="text-zinc-400 text-xs">참여 멤버가 없습니다.</span>
@@ -305,17 +374,8 @@ const MyPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => {
-                  setIsDetailOpen(false);
-                  setSelectedStudy(null);
-                }}
-                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-zinc-700 text-sm font-medium rounded-md transition-colors"
-              >
-                닫기
-              </button>
+              <button onClick={() => { setIsDetailOpen(false); setSelectedStudy(null); }} className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-zinc-700 text-sm font-medium rounded-md transition-colors">닫기</button>
             </div>
           </div>
         </div>
