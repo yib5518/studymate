@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, PenSquare, Heart, Bookmark, X, MessageSquare, Edit2, Trash2 } from 'lucide-react';
+import { Search, PenSquare, Heart, Bookmark, X, MessageSquare, Edit2, Trash2 } from 'lucide-react';
 import Header from '../components/Header';
 import { 
   getPostsApi, createPostApi, likePostApi, unlikePostApi, 
@@ -16,7 +16,7 @@ const CommunityPage = () => {
   const [keyword, setKeyword] = useState('');
   const [sort, setSort] = useState('latest');
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(5); 
+  const [size] = useState(5); 
   const [totalPages, setTotalPages] = useState(0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);

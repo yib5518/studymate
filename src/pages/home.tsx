@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Header from '../components/Header';
 
 const HomePage = () => {
   // 메인 화면용 최신 게시글 상태
-  const [recentPosts, setRecentPosts] = useState<any[]>([]);
+  const [recentPosts] = useState<any[]>([]);
 
   return (
     <div className="w-full min-h-screen bg-stone-50 flex flex-col items-center font-['Inter']">
@@ -36,7 +36,7 @@ const HomePage = () => {
                 최신 게시글이 없습니다.
               </div>
             ) : (
-              recentPosts.map((post, index) => (
+              recentPosts.map((_, index) => (
                 <div key={index} className="p-6 bg-white rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] border border-slate-300/50 flex flex-col gap-2">
                   {/* 최신 게시글 매핑 영역 */}
                 </div>

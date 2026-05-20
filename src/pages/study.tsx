@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, CheckSquare, Square, ChevronLeft, ChevronRight, X, Calendar, Users, User } from 'lucide-react';
+import { Search, CheckSquare, Square, ChevronLeft, ChevronRight, X, Calendar, Users, User } from 'lucide-react';
 import Header from '../components/Header';
 import { getStudyDetailApi, getStudiesApi, joinStudyApi } from '../api/auth'; // joinStudyApi 임포트
 
@@ -11,7 +11,7 @@ const StudyPage = () => {
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('latest');
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(4);
+  const [size] = useState(4);
   const [totalPages, setTotalPages] = useState(0);
 
   const [selectedStudy, setSelectedStudy] = useState<any>(null);
