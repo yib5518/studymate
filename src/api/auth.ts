@@ -1,7 +1,8 @@
 // src/api/auth.ts
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export const signupApi = async (id: string, password: string) => {
-  const response = await fetch('/api/auth/signup', {
+  const response = await fetch(`${BASE_URL}/api/auth/signup`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -17,7 +18,7 @@ export const signupApi = async (id: string, password: string) => {
 };
 
 export const loginApi = async (id: string, password: string) => {
-  const response = await fetch('/api/auth/login', {
+  const response = await fetch(`${BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -33,7 +34,7 @@ export const loginApi = async (id: string, password: string) => {
 };
 
 export const createStudyApi = async (name: string, category: string) => {
-  const response = await fetch('/api/studies', {
+  const response = await fetch(`${BASE_URL}/api/studies`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ export const createStudyApi = async (name: string, category: string) => {
 
 // 스터디 상세 조회 API 함수 추가
 export const getStudyDetailApi = async (id: number) => {
-  const response = await fetch(`/api/studies/${id}`, {
+  const response = await fetch(`${BASE_URL}/api/studies/${id}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +80,7 @@ export const getStudiesApi = async (params: {
   if (params.page !== undefined) queryParams.append('page', params.page.toString());
   if (params.size !== undefined) queryParams.append('size', params.size.toString());
 
-  const response = await fetch(`/api/studies?${queryParams.toString()}`, {
+  const response = await fetch(`${BASE_URL}/api/studies?${queryParams.toString()}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ export const getStudiesApi = async (params: {
 };
 
 export const joinStudyApi = async (id: number) => {
-  const response = await fetch(`/api/studies/${id}/join`, {
+  const response = await fetch(`${BASE_URL}/api/studies/${id}/join`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ export const getPostsApi = async (params: {
   if (params.page !== undefined) queryParams.append('page', params.page.toString());
   if (params.size !== undefined) queryParams.append('size', params.size.toString());
 
-  const response = await fetch(`/api/posts?${queryParams.toString()}`, {
+  const response = await fetch(`${BASE_URL}/api/posts?${queryParams.toString()}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ export const getPostsApi = async (params: {
 };
 
 export const createPostApi = async (title: string, content: string) => {
-  const response = await fetch('/api/posts', {
+  const response = await fetch(`${BASE_URL}/api/posts`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -153,7 +154,7 @@ export const createPostApi = async (title: string, content: string) => {
 
 // 게시글 좋아요 등록 API (POST)
 export const likePostApi = async (id: number) => {
-  const response = await fetch(`/api/posts/${id}/like`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${id}/like`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -169,7 +170,7 @@ export const likePostApi = async (id: number) => {
 
 // 게시글 좋아요 취소 API (DELETE)
 export const unlikePostApi = async (id: number) => {
-  const response = await fetch(`/api/posts/${id}/like`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${id}/like`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -185,7 +186,7 @@ export const unlikePostApi = async (id: number) => {
 
 // 게시글 상세 조회 API 함수 추가 (GET)
 export const getPostDetailApi = async (id: number) => {
-  const response = await fetch(`/api/posts/${id}`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${id}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -201,7 +202,7 @@ export const getPostDetailApi = async (id: number) => {
 
 // 댓글 작성 API 함수 추가 (POST)
 export const createCommentApi = async (postId: number, content: string) => {
-  const response = await fetch(`/api/posts/${postId}/comments`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${postId}/comments`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -218,7 +219,7 @@ export const createCommentApi = async (postId: number, content: string) => {
 
 // 게시글 북마크 등록 API (POST)
 export const bookmarkPostApi = async (id: number) => {
-  const response = await fetch(`/api/posts/${id}/bookmark`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${id}/bookmark`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -234,7 +235,7 @@ export const bookmarkPostApi = async (id: number) => {
 
 // 게시글 북마크 취소 API (DELETE)
 export const unbookmarkPostApi = async (id: number) => {
-  const response = await fetch(`/api/posts/${id}/bookmark`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${id}/bookmark`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -250,7 +251,7 @@ export const unbookmarkPostApi = async (id: number) => {
 
 // 게시글 수정 API (PATCH)
 export const updatePostApi = async (id: number, title: string, content: string) => {
-  const response = await fetch(`/api/posts/${id}`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -269,7 +270,7 @@ export const updatePostApi = async (id: number, title: string, content: string) 
 
 // 게시글 삭제 API (DELETE)
 export const deletePostApi = async (id: number) => {
-  const response = await fetch(`/api/posts/${id}`, {
+  const response = await fetch(`${BASE_URL}/api/posts/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -284,7 +285,7 @@ export const deletePostApi = async (id: number) => {
 
 // 댓글 수정 API (PATCH)
 export const updateCommentApi = async (id: number, content: string) => {
-  const response = await fetch(`/api/comments/${id}`, {
+  const response = await fetch(`${BASE_URL}/api/comments/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -302,7 +303,7 @@ export const updateCommentApi = async (id: number, content: string) => {
 
 // 댓글 삭제 API (DELETE)
 export const deleteCommentApi = async (id: number) => {
-  const response = await fetch(`/api/comments/${id}`, {
+  const response = await fetch(`${BASE_URL}/api/comments/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -316,7 +317,7 @@ export const deleteCommentApi = async (id: number) => {
 
 // 내 정보 및 즐겨찾기 게시글 조회 API (GET)
 export const getMyProfileApi = async () => {
-  const response = await fetch('/api/me', {
+  const response = await fetch(`${BASE_URL}/api/me`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -332,7 +333,7 @@ export const getMyProfileApi = async () => {
 
 // 로그아웃 API (POST)
 export const logoutApi = async () => {
-  const response = await fetch('/api/auth/logout', {
+  const response = await fetch(`${BASE_URL}/api/auth/logout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -346,7 +347,7 @@ export const logoutApi = async () => {
 
 // 회원탈퇴 API (DELETE)
 export const withdrawApi = async () => {
-  const response = await fetch('/api/auth/me', {
+  const response = await fetch(`${BASE_URL}/api/auth/me`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
